@@ -70,6 +70,10 @@ class TorchGate(torch.nn.Module):
         self.time_mask_smooth_ms = time_mask_smooth_ms
         self.register_buffer("smoothing_filter", self._generate_mask_smoothing_filter())
 
+        self.xn_hann_window = torch.hann_window(self.win_length)
+        self.x_hann_window = torch.hann_window(self.win_length)
+        self.y_hann_window = torch.hann_window(self.win_length)
+
     @torch.no_grad()
     def _generate_mask_smoothing_filter(self) -> Union[torch.Tensor, None]:
         """
@@ -147,7 +151,7 @@ class TorchGate(torch.nn.Module):
                 return_complex=True,
                 pad_mode="constant",
                 center=True,
-                window=torch.hann_window(self.win_length).to(xn.device),
+                window=self._xn_hann_window.to(xn.device),
             )
 
             XN_db = amp_to_db(XN).to(dtype=X_db.dtype)
@@ -228,7 +232,7 @@ class TorchGate(torch.nn.Module):
             return_complex=True,
             pad_mode="constant",
             center=True,
-            window=torch.hann_window(self.win_length).to(x.device),
+            window=self._x_hann_window.to(x.device),
         )
 
         # Compute signal mask based on stationary or nonstationary assumptions
@@ -258,7 +262,7 @@ class TorchGate(torch.nn.Module):
             hop_length=self.hop_length,
             win_length=self.win_length,
             center=True,
-            window=torch.hann_window(self.win_length).to(Y.device),
+            window=self._y_hann_window.to(Y.device),
         )
 
         return y.to(dtype=x.dtype)
